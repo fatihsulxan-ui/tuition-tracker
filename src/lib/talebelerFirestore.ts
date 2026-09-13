@@ -264,6 +264,8 @@ function hocaMailCoz(ham0: AyarVeri): HocaMailAyar {
   const v = (ham0 ?? {}) as Record<string, unknown>;
   const ham = Array.isArray(v["ekstraHocalar"]) ? (v["ekstraHocalar"] as unknown[]) : [];
   return {
+    gonderen: typeof v["gonderenEposta"] === "string" ? (v["gonderenEposta"] as string) : "",
+    gonderenAd: typeof v["gonderenAd"] === "string" ? (v["gonderenAd"] as string) : "",
     mailler:
       v["hocaMailler"] && typeof v["hocaMailler"] === "object"
         ? (v["hocaMailler"] as Record<string, string>)
@@ -296,6 +298,14 @@ export function hocaMailAyarDinle(cb: (a: HocaMailAyar) => void) {
 
 export async function ekstraHocalariKaydet(hocalar: EkstraHoca[]) {
   await setDoc(doc(db, AYAR_COL, AYAR_DOC), { ekstraHocalar: hocalar }, { merge: true });
+}
+
+export async function gonderenBilgiKaydet(eposta: string, ad: string) {
+  await setDoc(
+    doc(db, AYAR_COL, AYAR_DOC),
+    { gonderenEposta: eposta.trim(), gonderenAd: ad.trim() },
+    { merge: true },
+  );
 }
 
 export async function hocaMailleriKaydet(mailler: Record<string, string>) {

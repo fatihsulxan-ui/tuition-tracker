@@ -11,6 +11,8 @@ export type AidatMailGirdi = {
   odeyen: number;
   toplam: number;
   odemeyenler: string[];
+  gonderen?: string;
+  gonderenAd?: string;
 };
 
 function gecerliEposta(v: string) {
@@ -33,8 +35,10 @@ const b64 = (s: string) =>
 const header = (v: string) =>
   /^[\x00-\x7F]*$/.test(v) ? v : `=?UTF-8?B?${b64(v)}?=`;
 
-function rawMail(to: string, subject: string, body: string) {
+function rawMail(to: string, subject: string, body: string, from?: string) {
+  const gonderen = (from ?? "").trim();
   const mesaj = [
+    ...(gonderen ? [`From: ${gonderen}`] : []),
     `To: ${to}`,
     `Subject: ${header(subject)}`,
     "MIME-Version: 1.0",
@@ -50,7 +54,16 @@ export const aidatHatirlatmaGonder = createServerFn({ method: "POST" })
     if (!input || !gecerliEposta(String(input.eposta ?? "").trim())) {
       throw new Error("Geçerli bir e-posta adresi gerekli.");
     }
+    const gonderenHam = String(input.gonderen ?? "").trim();
+    const gonderenAd = temiz(input.gonderenAd, 80).trim();
+    const gonderen =
+      gonderenHam && gecerliEposta(gonderenHam)
+        ? gonderenAd
+          ? `${header(gonderenAd)} <${gonderenHam}>`
+          : gonderenHam
+        : "";
     return {
+      gonderen,
       eposta: String(input.eposta).trim(),
       hocaAdi: temiz(input.hocaAdi, 60) || "Hocam",
       grupAdi: temiz(input.grupAdi, 60),
@@ -105,7 +118,7 @@ export const aidatHatirlatmaGonder = createServerFn({ method: "POST" })
         "Content-Type": "application/json",
       },
       body: JSON.stringify({
-        raw: rawMail(data.eposta, konu, satirlar.join("\n")),
+        raw: rawMail(data.eposta, konu, satirlar.join("\n"), data.gonderen),
       }),
     });
 

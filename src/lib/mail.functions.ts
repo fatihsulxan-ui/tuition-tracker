@@ -6,6 +6,8 @@ export type SerbestMailGirdi = {
   eposta: string;
   konu: string;
   metin: string;
+  gonderen?: string;
+  gonderenAd?: string;
 };
 
 function gecerliEposta(v: string) {
@@ -22,8 +24,10 @@ const b64 = (s: string) =>
 const header = (v: string) =>
   /^[\x00-\x7F]*$/.test(v) ? v : `=?UTF-8?B?${b64(v)}?=`;
 
-function rawMail(to: string, subject: string, body: string) {
+function rawMail(to: string, subject: string, body: string, from?: string) {
+  const gonderen = (from ?? "").trim();
   const mesaj = [
+    ...(gonderen ? [`From: ${gonderen}`] : []),
     `To: ${to}`,
     `Subject: ${header(subject)}`,
     "MIME-Version: 1.0",
@@ -42,12 +46,23 @@ export const serbestMailGonder = createServerFn({ method: "POST" })
       .slice(0, 200)
       .trim();
     const metin = String(input?.metin ?? "").slice(0, 20000);
+    const gonderenHam = String(input?.gonderen ?? "").trim();
+    const gonderenAd = String(input?.gonderenAd ?? "")
+      .replace(/[\r\n]+/g, " ")
+      .slice(0, 80)
+      .trim();
+    const gonderen =
+      gonderenHam && gecerliEposta(gonderenHam)
+        ? gonderenAd
+          ? `${header(gonderenAd)} <${gonderenHam}>`
+          : gonderenHam
+        : "";
     if (!gecerliEposta(eposta)) {
       throw new Error("Geçerli bir e-posta adresi gerekli.");
     }
     if (!konu) throw new Error("Konu boş olamaz.");
     if (!metin.trim()) throw new Error("Mesaj boş olamaz.");
-    return { eposta, konu, metin };
+    return { eposta, konu, metin, gonderen };
   })
   .handler(async ({ data }) => {
     const lovableKey = process.env["LOVABLE_API_KEY"];
@@ -64,7 +79,7 @@ export const serbestMailGonder = createServerFn({ method: "POST" })
         "Content-Type": "application/json",
       },
       body: JSON.stringify({
-        raw: rawMail(data.eposta, data.konu, data.metin),
+        raw: rawMail(data.eposta, data.konu, data.metin, data.gonderen),
       }),
     });
 
