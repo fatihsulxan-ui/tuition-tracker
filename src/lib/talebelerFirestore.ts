@@ -10,7 +10,6 @@ import {
   getDocsFromServer,
   setDoc,
   query,
-  orderBy,
 } from "firebase/firestore";
 import { db } from "./firebase";
 import { cacheOku, cacheYaz, CACHE } from "./yerelCache";
