@@ -10,7 +10,6 @@ import {
   getDocsFromServer,
   setDoc,
   query,
-  orderBy,
 } from "firebase/firestore";
 import { db } from "./firebase";
 import { cacheOku, cacheYaz, CACHE } from "./yerelCache";
@@ -107,11 +106,22 @@ function talebeCoz(docs: HamDoc[]): Talebe[] {
   });
 }
 
+// Türkçe alfabeye duyarlı A–Z sıralama (ç/ğ/ı/ö/ş/ü doğru yerde).
+// İsimler eşitse eski "sira" alanı karar verir.
+const trKarsilastir = new Intl.Collator("tr", { sensitivity: "base" });
+export function talebeleriTrSirala(liste: Talebe[]): Talebe[] {
+  return [...liste].sort(
+    (a, b) => trKarsilastir.compare(a.isim, b.isim) || (a.sira ?? 0) - (b.sira ?? 0),
+  );
+}
+
 function talebeleriDinleHam(cb: (t: Talebe[]) => void, onError?: (e: Error) => void) {
-  const q = query(collection(db, COL), orderBy("sira", "asc"));
+  // Sunucu tarafında orderBy kullanmıyoruz: Türkçe alfabe sırası istemcide
+  // yapılır; ayrıca "sira" alanı olmayan kayıtlar da listeden düşmez.
+  const q = query(collection(db, COL));
   return onSnapshot(
     q,
-    (snap) => cb(talebeCoz(snap.docs)),
+    (snap) => cb(talebeleriTrSirala(talebeCoz(snap.docs))),
     (err) => {
       console.error("Firestore dinleme hatası", err);
       onError?.(err);
@@ -126,9 +136,9 @@ function talebeleriDinleHam(cb: (t: Talebe[]) => void, onError?: (e: Error) => v
  */
 export async function talebeleriTazele(): Promise<Talebe[]> {
   try {
-    const q = query(collection(db, COL), orderBy("sira", "asc"));
+    const q = query(collection(db, COL));
     const snap = await getDocsFromServer(q);
-    const liste = talebeCoz(snap.docs);
+    const liste = talebeleriTrSirala(talebeCoz(snap.docs));
     talebeSon = liste;
     cacheYaz(CACHE.talebeler, liste);
     talebeAbone.forEach((f) => f(liste));
@@ -148,8 +158,10 @@ function talebeleriYerelUygula(donustur: (mevcut: Talebe[]) => Talebe[]) {
   talebeAbone.forEach((f) => f(yeni));
 }
 
+// İyimser güncellemelerde de liste hep Türkçe alfabe sırasında tutulur;
+// böylece yeni eklenen talebe beklenmeden doğru yere yerleşir.
 function siraliYaz(liste: Talebe[]) {
-  return [...liste].sort((a, b) => (a.sira ?? 0) - (b.sira ?? 0));
+  return talebeleriTrSirala(liste);
 }
 
 export async function talebeEkle(t: Omit<Talebe, "id">) {
