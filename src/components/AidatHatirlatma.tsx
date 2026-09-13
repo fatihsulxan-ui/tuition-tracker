@@ -206,7 +206,9 @@ export default function AidatHatirlatma({ talebeler }: { talebeler: Talebe[] }) 
     }
     setGonderiliyor(tur);
     try {
-      await serbestMailGonder({ data: { eposta, konu, metin } });
+      await serbestMailGonder({
+        data: { eposta, konu, metin, gonderen: ayar.gonderen, gonderenAd: ayar.gonderenAd },
+      });
       toast.success(`${eposta} adresine gönderildi.`);
     } catch (e) {
       toast.error(e instanceof Error ? e.message : "E-posta gönderilemedi.");
@@ -237,7 +239,13 @@ export default function AidatHatirlatma({ talebeler }: { talebeler: Talebe[] }) 
       for (const eposta of hedefler) {
         // eslint-disable-next-line no-await-in-loop
         await serbestMailGonder({
-          data: { eposta, konu: mesajKonu, metin: mesajMetin },
+          data: {
+            eposta,
+            konu: mesajKonu,
+            metin: mesajMetin,
+            gonderen: ayar.gonderen,
+            gonderenAd: ayar.gonderenAd,
+          },
         });
       }
       toast.success(
@@ -267,7 +275,13 @@ export default function AidatHatirlatma({ talebeler }: { talebeler: Talebe[] }) 
       for (const a of hedefler) {
         // eslint-disable-next-line no-await-in-loop
         await serbestMailGonder({
-          data: { eposta: a.eposta.trim(), konu: raporKonu, metin: raporMetin },
+          data: {
+            eposta: a.eposta.trim(),
+            konu: raporKonu,
+            metin: raporMetin,
+            gonderen: ayar.gonderen,
+            gonderenAd: ayar.gonderenAd,
+          },
         });
       }
       toast.success(`${hedefler.length} hocaya rapor gönderildi.`);
@@ -309,6 +323,8 @@ export default function AidatHatirlatma({ talebeler }: { talebeler: Talebe[] }) 
           odeyen: a.odeyen,
           toplam: a.toplam,
           odemeyenler: a.odemeyenler,
+          gonderen: ayar.gonderen,
+          gonderenAd: ayar.gonderenAd,
         },
       });
       await aidatMailGonderimIsaretle(ayKey, a.anahtar, ayar.gonderilen);
