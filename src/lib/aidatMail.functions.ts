@@ -33,8 +33,10 @@ const b64 = (s: string) =>
 const header = (v: string) =>
   /^[\x00-\x7F]*$/.test(v) ? v : `=?UTF-8?B?${b64(v)}?=`;
 
-function rawMail(to: string, subject: string, body: string) {
+function rawMail(to: string, subject: string, body: string, from?: string) {
+  const gonderen = (from ?? "").trim();
   const mesaj = [
+    ...(gonderen ? [`From: ${gonderen}`] : []),
     `To: ${to}`,
     `Subject: ${header(subject)}`,
     "MIME-Version: 1.0",

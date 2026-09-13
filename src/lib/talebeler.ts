@@ -119,6 +119,10 @@ export async function ekstraHocalariKaydet(hocalar: EkstraHoca[]) {
   return (await veriKatmani()).ekstraHocalariKaydet(hocalar);
 }
 
+export async function gonderenBilgiKaydet(eposta: string, ad: string) {
+  return (await veriKatmani()).gonderenBilgiKaydet(eposta, ad);
+}
+
 export async function hocaMailleriKaydet(mailler: Record<string, string>) {
   return (await veriKatmani()).hocaMailleriKaydet(mailler);
 }

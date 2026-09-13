@@ -50,6 +50,10 @@ export type EkstraHoca = {
 };
 
 export type HocaMailAyar = {
+  /** Hocalara gönderilen maillerde görünecek gönderen adresi (Gmail). */
+  gonderen?: string;
+  /** Gönderen adı (isteğe bağlı). */
+  gonderenAd?: string;
   mailler: Record<string, string>;
   gonderilen: Record<string, string[]>; // ayKey -> gönderilen grup id'leri
   ekstraHocalar: EkstraHoca[];
