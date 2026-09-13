@@ -103,7 +103,12 @@ import {
   type Ders,
 } from "@/lib/talebeler";
 import { dosyaFotoDataUrl, bashHarfler } from "@/lib/foto";
-import { aidatTutariniOku, hocaMailAyarDinle, talebeleriTazele } from "@/lib/talebeler";
+import {
+  aidatTutariniOku,
+  hocaMailAyarDinle,
+  gonderenBilgiKaydet,
+  talebeleriTazele,
+} from "@/lib/talebeler";
 import { useBugun } from "@/lib/bugun";
 import { useGruplar } from "@/hooks/use-gruplar";
 import { listeYazdir } from "@/lib/pdf";
@@ -421,6 +426,11 @@ function Index() {
 
   const [menuAcik, setMenuAcik] = useState(false);
   const [ayarlarAcik, setAyarlarAcik] = useState(false);
+  // Gönderen Gmail ayarı (hocalara giden maillerde görünecek adres)
+  const [gonderenAcik, setGonderenAcik] = useState(false);
+  const [gonderenEposta, setGonderenEposta] = useState("");
+  const [gonderenAd, setGonderenAd] = useState("");
+  const [gonderenKaydediliyor, setGonderenKaydediliyor] = useState(false);
   const [mailAcik, setMailAcik] = useState(false);
   // Panel menüden açıldıysa, kapanınca menüye geri dön
   const menudenAcildi = useRef(false);
@@ -526,6 +536,15 @@ function Index() {
       localStorage.setItem(HOCA_AD_KEY, hoca);
     } catch {}
   }, [hoca]);
+
+  // Kayıtlı gönderen Gmail bilgisi
+  useEffect(() => {
+    const unsub = hocaMailAyarDinle((a) => {
+      setGonderenEposta(a.gonderen ?? "");
+      setGonderenAd(a.gonderenAd ?? "");
+    });
+    return () => unsub();
+  }, []);
 
   // Yeni ay geldiğinde aidat hatırlatma e-postası uyarısı
   useEffect(() => {
@@ -1852,6 +1871,21 @@ function Index() {
                     onClick={() => {
                       ayarlardanAcildi.current = true;
                       setAyarlarAcik(false);
+                      setGonderenAcik(true);
+                    }}
+                  >
+                    <Mail className="h-4 w-4 text-muted-foreground" />
+                    <span className="flex-1 text-sm font-medium">Gönderen Gmail</span>
+                    <span className="max-w-[45%] truncate text-xs text-muted-foreground">
+                      {gonderenEposta || "Tanımlı değil"}
+                    </span>
+                  </button>
+                  <button
+                    type="button"
+                    className="flex w-full items-center gap-3 rounded-md border border-border/60 px-3 py-2 text-left transition-colors hover:bg-accent"
+                    onClick={() => {
+                      ayarlardanAcildi.current = true;
+                      setAyarlarAcik(false);
                       setGrupTaslak(gruplar.map((g) => ({ ...g })));
                       setGruplarAcik(true);
                     }}
@@ -1869,6 +1903,77 @@ function Index() {
               </Button>
               <Button variant="ghost" onClick={ayarlarKapat}>
                 {tr("kapat")}
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+
+        <Dialog
+          open={gonderenAcik}
+          onOpenChange={(o) => {
+            setGonderenAcik(o);
+            if (!o) ayarlaraDon();
+          }}
+        >
+          <DialogContent className="sm:max-w-sm">
+            <DialogHeader>
+              <DialogTitle>Gönderen Gmail</DialogTitle>
+              <DialogDescription>
+                Hocalara gönderilen e-postalarda görünecek adres. İstediğiniz zaman
+                değiştirebilirsiniz.
+              </DialogDescription>
+            </DialogHeader>
+            <div className="space-y-3">
+              <div className="space-y-1">
+                <Label>Gmail adresi</Label>
+                <Input
+                  type="email"
+                  inputMode="email"
+                  autoComplete="email"
+                  placeholder="ornek@gmail.com"
+                  value={gonderenEposta}
+                  onChange={(e) => setGonderenEposta(e.target.value)}
+                />
+              </div>
+              <div className="space-y-1">
+                <Label>Görünen ad (isteğe bağlı)</Label>
+                <Input
+                  placeholder="SİEC Jigjiga Kursu"
+                  value={gonderenAd}
+                  onChange={(e) => setGonderenAd(e.target.value)}
+                />
+              </div>
+              <p className="text-xs text-muted-foreground">
+                Bu adresin bağlı Gmail hesabına ait (ya da o hesapta doğrulanmış) olması
+                gerekir; aksi halde Gmail mektubu kendi adresinden gönderir.
+              </p>
+            </div>
+            <DialogFooter className="sm:justify-between">
+              <Button variant="outline" className="gap-2" onClick={() => setGonderenAcik(false)}>
+                <ArrowLeft className="h-4 w-4" />
+                Geri dön
+              </Button>
+              <Button
+                disabled={gonderenKaydediliyor}
+                onClick={() => {
+                  const adres = gonderenEposta.trim();
+                  if (adres && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(adres)) {
+                    toast.error("Geçerli bir e-posta adresi yazın.");
+                    return;
+                  }
+                  setGonderenKaydediliyor(true);
+                  void gonderenBilgiKaydet(adres, gonderenAd.trim())
+                    .then(() => {
+                      toast.success(
+                        adres ? `Gönderen adres: ${adres}` : "Gönderen adresi temizlendi.",
+                      );
+                      setGonderenAcik(false);
+                    })
+                    .catch(() => toast.error("Kaydedilemedi."))
+                    .finally(() => setGonderenKaydediliyor(false));
+                }}
+              >
+                {gonderenKaydediliyor ? "Kaydediliyor..." : "Kaydet"}
               </Button>
             </DialogFooter>
           </DialogContent>
