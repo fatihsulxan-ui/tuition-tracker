@@ -3117,7 +3117,14 @@ function RaporDiyalog({
   const tr = useT();
   const siralanmis = [...talebeler]
     .map((t) => ({ t, gun: getKiraatGunler(t, haftaBas).length }))
-    .sort((a, b) => b.gun - a.gun);
+    .sort(
+      (a, b) =>
+        b.gun - a.gun ||
+        new Intl.Collator("tr", { sensitivity: "base" }).compare(
+          a.t.isim,
+          b.t.isim,
+        ),
+    );
   const enIyiler = siralanmis.filter((x) => x.gun >= 4);
   const ortalar = siralanmis.filter((x) => x.gun === 2 || x.gun === 3);
   const zayiflar = siralanmis.filter((x) => x.gun <= 1);
